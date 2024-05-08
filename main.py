@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import requests
 import tempfile
 from bs4 import BeautifulSoup
-from PIL import Image
+# from PIL import Image
 
 # Load environment variables
 load_dotenv()
