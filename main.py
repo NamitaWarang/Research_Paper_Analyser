@@ -12,21 +12,23 @@ from dotenv import load_dotenv
 import requests
 import tempfile
 from bs4 import BeautifulSoup
-from PIL import Image
 
-
-
+# to load api key from env file
 load_dotenv()
 os.getenv("GOOGLE_API_KEY")
+
+# to configure google api key for authentication
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
+# to fetch all the pdf links present on the page
 def fetch_pdf_links(url):
     response = requests.get(url)
     if response.status_code != 200:
         st.error(f"Failed to fetch webpage content: {response.status_code}")
         return []
 
+    # to parse the html content of the webpage
     soup = BeautifulSoup(response.content, 'html.parser')
     links = soup.find_all('a')
     
@@ -40,27 +42,33 @@ def fetch_pdf_links(url):
     
     return pdf_links
 
+# to split text into chunks
 def get_text_chunks(text):
+    # langchain text splitter
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
     return chunks
 
+# to create vector store using google generative AI and Facebook AI Similarity Search
 def get_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
 
+# to update the faiss index file
 def update_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = load_vector_store()
     vector_store.add_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
 
+# to load the vector store of faiss index
 def load_vector_store():
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
     return vector_store
 
+# to create prompt template and provide chain
 def get_conversational_chain():
     prompt_template = """
     Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
@@ -74,6 +82,7 @@ def get_conversational_chain():
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
+# to handle user input
 def user_input(user_question):
     new_db = load_vector_store()
     docs = new_db.similarity_search(user_question)
@@ -81,6 +90,7 @@ def user_input(user_question):
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
     st.write("Reply: ", response["output_text"])
 
+# to download pdf as temp file
 def download_pdf(url):
     response = requests.get(url)
     if response.status_code != 200:
@@ -91,6 +101,7 @@ def download_pdf(url):
         tf.write(response.content)
         return tf.name
 
+# to extract text from pdf
 def get_pdf_text(pdf_path):
     text = ""
     try:
@@ -105,7 +116,7 @@ def main():
     st.set_page_config("Research Paper Analyser", page_icon="..\\project\\favicon.png")
     col1, mid, col2 = st.columns([1,2,20])
     with col1:
-        st.image('..\\project\\header.jpg', width=90)
+        st.image('header.jpg', width=90)
     with col2:
         st.header("RESEARCH PAPER ANALYSER")
     user_question = st.text_input("Ask anything about the pdf files.")
