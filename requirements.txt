@@ -1,0 +1,10 @@
+streamlit
+PyPDF2
+langchain
+langchain_google_genai
+google
+dotenv
+requests
+tempfile
+bs4
+PIL
